@@ -1,0 +1,16 @@
+#ifndef LIBRARY_CONFIG_H
+#define LIBRARY_CONFIG_H
+
+#include <string>
+
+std::string getMergerLibDir()
+{
+    return "@MERGER_LIB_DIR@";
+}
+
+std::string getYamlcppLibDir()
+{
+    return "@YAML_CPP_LIB_DIR@";
+}
+
+#endif

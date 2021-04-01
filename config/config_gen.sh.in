@@ -1,0 +1,8 @@
+#!bin/bash
+WORKDIR=@MERGER_WORK_DIR@
+CONFIGDIR=@MERGER_LIB_DIR@config
+INPUT=${WORKDIR}/config/anamerger_config.yaml
+OUTPUT=${WORKDIR}/config/config_${1}.yaml
+REFERENCE_CUTS_NAME=${WORKDIR}/reference_cuts/referenceCuts_${1}.txt
+
+python ${CONFIGDIR}/config_gen.py -i ${INPUT} -o ${OUTPUT} -b AnamergerMain -k ReferenceCutsName -v ${REFERENCE_CUTS_NAME}

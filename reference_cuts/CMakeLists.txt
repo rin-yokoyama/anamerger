@@ -1,0 +1,7 @@
+install(FILES referenceCuts_all.txt DESTINATION reference_cuts)
+install(FILES referenceCuts_Co.txt DESTINATION reference_cuts)
+install(FILES referenceCuts_Ni.txt DESTINATION reference_cuts)
+install(FILES referenceCuts_Cu.txt DESTINATION reference_cuts)
+install(FILES referenceCuts_Zn.txt DESTINATION reference_cuts)
+install(FILES referenceCuts_Ga.txt DESTINATION reference_cuts)
+install(FILES referenceCuts_Ge.txt DESTINATION reference_cuts)

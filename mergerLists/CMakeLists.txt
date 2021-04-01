@@ -1,0 +1,1 @@
+install(FILES mergerList.txt DESTINATION mergerLists)

@@ -1,0 +1,13 @@
+#PBS -S /bin/bash
+#PBS -A ACF-UTK0115
+#-l partition=general,feature=skylake,nodes=1:ppn=38,walltime=24:00:00
+#PBS -l nodes=1:ppn=32,walltime=24:00:00
+#PBS -l qos=overflow
+#PBS -bea
+#PBS -V
+#PBS -e @MERGER_WORK_DIR@/logs/
+#PBS -o @MERGER_WORK_DIR@/logs/
+cd @MERGER_WORK_DIR@
+source @HOME@/.bashrc
+
+python ./scripts/run_anamerger.py

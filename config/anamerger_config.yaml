@@ -1,0 +1,7 @@
+AnamergerMain:
+    TreeName: mergedData
+    MergerListName: "./mergerList/anamergerList.txt"
+    ReferenceCutsName: "./reference_cuts/referenceCuts.txt"
+    NumWorkers: 40
+    PrintFrequency: 10000
+    UseProof: True

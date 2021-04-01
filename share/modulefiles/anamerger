@@ -1,0 +1,16 @@
+#%Module1.0
+# Modulefiles/merger
+#
+
+proc ModulesHelp {} {
+    global version modroot
+    puts stderr "data merger for VANDLE18 experiment"
+}
+module-whatis "data merger for VANDLE18 experiment"
+
+set topdir  @CMAKE_INSTALL_PREFIX@
+
+prepend-path PATH   $topdir/bin
+prepend-path LD_LIBRARY_PATH    $topdir/lib
+prepend-path CPLUS_INCLUDE_PATH    $topdir/include
+prepend-path LIBRARY_PATH    $topdir/lib
