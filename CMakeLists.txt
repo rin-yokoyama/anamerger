@@ -12,6 +12,7 @@ set( MERGER_LIB_DIR ${CMAKE_INSTALL_PREFIX}/lib/ CACHE STRING "path to install l
 set(MERGER_WORK_DIR $ENV{HOME}/merger_work/ CACHE STRING "path to working directory")
 set(BRIKEN_TOOLS_DIR ~/opt/ur17b/BrikenTools CACHE PATH "path to BrikenTools dir")
 set(BRIKEN_TOOLS_MERGER_DIR ${BRIKEN_TOOLS_DIR}/Merger/MergerSoft)
+set(BRIKEN_TOOLS_BUILD_DIR ${BRIKEN_TOOLS_DIR}/Merger/build CACHE PATH "path to BrikenTools build dir")
 set(HOME $ENV{HOME} )
 configure_file(include/LibraryConfig.h.in ${CMAKE_BINARY_DIR}/generated/LibraryConfig.h)
 
@@ -32,7 +33,7 @@ include_directories(${BRIKEN_TOOLS_MERGER_DIR})
 link_directories(${PAASS_DIR_PATH}/lib)
 link_directories(${YAML_CPP_LIB_DIR})
 link_directories(${ROOTSYS}/lib)
-link_directories(${BRIKEN_TOOLS_DIR}/Merger/build)
+link_directories(${BRIKEN_TOOLS_BUILD_DIR})
 
 #---Create  a main program using the library
 add_subdirectory(source)
