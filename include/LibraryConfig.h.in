@@ -8,6 +8,11 @@ std::string getMergerLibDir()
     return "@MERGER_LIB_DIR@";
 }
 
+std::string getBrikenToolsLibDir()
+{
+    return "@BRIKEN_TOOLS_BUILD_DIR@";
+}
+
 std::string getYamlcppLibDir()
 {
     return "@YAML_CPP_LIB_DIR@";

@@ -67,6 +67,7 @@ int main(int argc, char** argv)
 			std::vector<std::string> libs =
 			{
 			  getYamlcppLibDir() + "/libyaml-cpp.so",
+			  getBrikenToolsLibDir() + "/libdata2TreeLib.so",
 			  getMergerLibDir() + "/libAnamergerLib.so",
 			};
 			/** Load libraries to the proof server **/

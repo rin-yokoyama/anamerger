@@ -332,7 +332,6 @@ void AnamergerSelector::Terminate()
 		obj->Write();
 	}
 
-	fOutputFile->Close();
 	// write the parameters
 	{
 		std::string parString("Beta-neutron time correlation cuts. Long_t DTbnlow= ");
@@ -400,6 +399,7 @@ void AnamergerSelector::Terminate()
 		TNamed parTNamed("par7", parString.c_str());
 		parTNamed.Write(0, 2, 0);
 	}
+	fOutputFile->Close();
 
 	if (fOutputFile)
 	{
