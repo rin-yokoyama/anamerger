@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <TList.h>
 
 ClassImp(AnamergerSelector);
 
@@ -55,9 +56,32 @@ void AnamergerSelector::SlaveBegin(TTree *mergedData)
 		TNamed *named = (TNamed *)fInput->FindObject("reference_cut_name");
 		if (named)
 			ref_cut_name_ = named->GetTitle();
+		auto param = (TParameter<Double_t>*)fInput->FindObject("correlation_radius");
+		if (param)
+			correlation_radius_ = param->GetVal();
+		param = (TParameter<Double_t>*)fInput->FindObject("gg_tdiff");
+		if (param)
+			gg_tdiff_ = param->GetVal();
+
+
+		TIter next(fInput);
+		while (auto *obj = (TObject *)next())
+		{
+			const std::string name(obj->GetName());
+			if (name == "output_file_name" || name == "reference_cut_name" || name == "gg_tdiff" || name == "correlation_radius")
+				continue;
+			auto n = (TNamed *)obj;
+			const std::string title(n->GetTitle());
+			if (title == "True" || title == "true")
+				hist_group_map_[n->GetName()] = true;
+		}
 	}
 
 	fHistArray->Add(new TH1F("countPID", "countPID", 100, 0, 100));
+	if (hist_group_map_.count("TEST"))
+	{
+		fHistArray->Add(new TH1F("betaEx", "betaEx", 1000, 0, 1000));
+	}
 
 	//adding histograms to output list
 	TIter next(fHistArray);
@@ -89,23 +113,28 @@ void AnamergerSelector::Init(TTree *mergedData)
 Bool_t AnamergerSelector::Process(Long64_t entry)
 {
 	tree_reader_.SetLocalEntry(entry);
+
+	// test
+	if (hist_group_map_.count("TEST"))
 	{
-
-		// Implant events
-		if (!(*implant).vectorOfPid.empty())
+		((TH1F *)fHistArray->FindObject("betaEx"))->Fill((*beta).Ex);
+	}
+	// Implant events
+	if (!(*implant).vectorOfPid.empty())
+	{
+		Int_t i = 0;
+		for (const auto &vit : vectorIsotopes)
 		{
-			Int_t i = 0;
-			for (const auto &vit : vectorIsotopes)
+			i++;
+			if (vit.IsInside((*implant).aoq, (*implant).zet))
 			{
-				i++;
-				if (vit.IsInside((*implant).aoq, (*implant).zet))
-				{
-					break;
-				}
+				break;
 			}
-			((TH1F *)fHistArray->FindObject("countPID"))->Fill(i);
+		}
+		((TH1F *)fHistArray->FindObject("countPID"))->Fill(i);
 
-#ifdef ISOMER
+		if (hist_group_map_.count("ISOMER"))
+		{
 			for (auto vit : vectorIsotopes)
 			{
 				if (vit.IsInside((*implant).aoq, (*implant).zet))
@@ -114,7 +143,7 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 					std::vector<GammaData> g7_vec;
 					for (auto gm : (*implant).vectorOfGamma)
 					{
-						const Double_t tdiff = (gm.TIME - (*implant).T) * 1E-9 + 7.5e-6;
+						const Double_t tdiff = (gm.TIME - (*implant).T) * 1E-9;
 						((TH2F *)vit.fHistArray->FindObject(std::string("hETgI" + vit.isotopeName).c_str()))->Fill(gm.EN, tdiff);
 
 						if (tdiff > 1e-6 && tdiff < 5e-6)
@@ -137,37 +166,37 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 					}
 				}
 			}
-#endif
 		}
+	}
 
-#ifdef BETA
-		if ((*beta).z > 3) // WAS3ABi
-			return kTRUE;
+	if (hist_group_map_.count("BETA"))
+	{
+		//if ((*beta).z > 3) // WAS3ABi
+		//	return kTRUE;
 
-		for (const auto &vbeta : (*beta).vectorOfBeta)
-		{
-			const Double_t tdiff = ((double)(*beta).T - (double)vbeta.TIME) * 1.E-9;
-			if (tdiff > 0 && tdiff < 50.E-6)
-				return kTRUE;
-		}
+		//for (const auto &vbeta : (*beta).vectorOfBeta)
+		//{
+		//	const Double_t tdiff = ((double)(*beta).T - (double)vbeta.TIME) * 1.E-9;
+		//	if (tdiff > 0 && tdiff < 50.E-6)
+		//		return kTRUE;
+		//}
 
 		for (const auto &imp : (*beta).vectorOfImp)
 		{
-			if (imp.Z > 3) // WAS3ABi
-				continue;
-			bool yso = false;
-			for (const auto &imp2 : (*beta).vectorOfImp)
-			{
-				const Double_t tdiff = (imp.TIME - imp2.TIME) * 1.E-9;
-				if (imp2.Z > 3 && tdiff > -10E-6 && tdiff < 10E-6)
-					yso = true;
-			}
-			if (yso)
-				continue;
+			//if (imp.Z > 3) // WAS3ABi
+			//	continue;
+			//bool yso = false;
+			//for (const auto &imp2 : (*beta).vectorOfImp)
+			//{
+			//	const Double_t tdiff = (imp.TIME - imp2.TIME) * 1.E-9;
+			//	if (imp2.Z > 3 && tdiff > -10E-6 && tdiff < 10E-6)
+			//		yso = true;
+			//}
+			//	continue;
 			if ((*beta).z != imp.Z)
 				continue;
 			{
-				const Double_t pdist = 1.5 * 1.5; // WAS3ABi
+				const Double_t pdist = correlation_radius_ * correlation_radius_; // WAS3ABi
 				if (TMath::Power((*beta).x - imp.X, 2) + TMath::Power((*beta).y - imp.Y, 2) > pdist)
 					continue;
 			}
@@ -175,7 +204,7 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 			for (const auto &neu : (*beta).vectorOfNeu)
 			{
 				Double_t tdiff = neu.TIME - (*beta).T;
-				if (-2E+4 < tdiff && tdiff < 18E+4 && neu.EN > 175 && neu.EN < 850)
+				if (DTbnlow < tdiff && tdiff < DTbnhigh && neu.EN > Enlow && neu.EN < Enhigh)
 					nmult++;
 			}
 			for (const auto &vit : vectorIsotopes)
@@ -184,17 +213,19 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 				{
 
 					const Double_t tdiff = ((*beta).T - imp.TIME) * 1.E-9;
-#ifdef DECAYCURVE
-					((TH1F *)vit.fHistArray->FindObject(std::string("hTib" + vit.isotopeName).c_str()))->Fill(tdiff);
-					if (!nmult)
-						((TH1F *)vit.fHistArray->FindObject(std::string("hTib0n" + vit.isotopeName).c_str()))->Fill(tdiff);
-					if (nmult == 1)
-						((TH1F *)vit.fHistArray->FindObject(std::string("hTibn" + vit.isotopeName).c_str()))->Fill(tdiff);
-					if (nmult == 2)
-						((TH1F *)vit.fHistArray->FindObject(std::string("hTibnn" + vit.isotopeName).c_str()))->Fill(tdiff);
-					if (nmult == 3)
-						((TH1F *)vit.fHistArray->FindObject(std::string("hTib3n" + vit.isotopeName).c_str()))->Fill(tdiff);
-#endif
+
+					if (hist_group_map_.count("DECAYCURVE"))
+					{
+						((TH1F *)vit.fHistArray->FindObject(std::string("hTib" + vit.isotopeName).c_str()))->Fill(tdiff);
+						if (!nmult)
+							((TH1F *)vit.fHistArray->FindObject(std::string("hTib0n" + vit.isotopeName).c_str()))->Fill(tdiff);
+						if (nmult == 1)
+							((TH1F *)vit.fHistArray->FindObject(std::string("hTibn" + vit.isotopeName).c_str()))->Fill(tdiff);
+						if (nmult == 2)
+							((TH1F *)vit.fHistArray->FindObject(std::string("hTibnn" + vit.isotopeName).c_str()))->Fill(tdiff);
+						if (nmult == 3)
+							((TH1F *)vit.fHistArray->FindObject(std::string("hTib3n" + vit.isotopeName).c_str()))->Fill(tdiff);
+					}
 
 					std::vector<GammaData> d4_vec;
 					std::vector<GammaData> g7_vec;
@@ -204,22 +235,24 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 					{
 						const Double_t bg_tdiff = ((*beta).T - gm.TIME);
 
-#ifdef GAMMA_ET
-						if (!nmult)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEgTbg0n" + vit.isotopeName).c_str()))->Fill(gm.EN, bg_tdiff);
-						if (nmult == 1)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEgTbgn" + vit.isotopeName).c_str()))->Fill(gm.EN, bg_tdiff);
-						if (nmult == 2)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEgTbgnn" + vit.isotopeName).c_str()))->Fill(gm.EN, bg_tdiff);
-#endif
-						if (bg_tdiff < 2000. || bg_tdiff > 5000.)
-							continue;
+						if (hist_group_map_.count("GAMMA_ET"))
+						{
+							if (!nmult)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTbg0n" + vit.isotopeName).c_str()))->Fill(gm.EN, bg_tdiff);
+							if (nmult == 1)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTbgn" + vit.isotopeName).c_str()))->Fill(gm.EN, bg_tdiff);
+							if (nmult == 2)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTbgnn" + vit.isotopeName).c_str()))->Fill(gm.EN, bg_tdiff);
+						}
+
+						//if (bg_tdiff < 2000. || bg_tdiff > 5000.)
+						//	continue;
 						if (gm.INDEX1 == 1)
 							d4_vec.push_back(gm);
 						if (gm.INDEX1 == 2)
 							g7_vec.push_back(gm);
 
-						if (tdiff > 0. && tdiff < 0.1)
+						if (tdiff > 0. && tdiff < gg_tdiff_)
 						{
 							if (gm.INDEX1 == 1)
 								d4gg_vec.push_back(gm);
@@ -234,17 +267,19 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 					{
 						esum_d4 += d4.EN;
 					}
-#ifdef GAMMA_ET
-					if (esum_d4 > 0)
+
+					if (hist_group_map_.count("GAMMA_ET"))
 					{
-						if (!nmult)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEgTib0n" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
-						if (nmult == 1)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibn" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
-						if (nmult == 2)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibnn" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
+						if (esum_d4 > 0)
+						{
+							if (!nmult)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTib0n" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
+							if (nmult == 1)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibn" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
+							if (nmult == 2)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibnn" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
+						}
 					}
-#endif
 
 					Double_t esum_g7 = 0;
 					for (const auto &g7 : g7_vec)
@@ -252,33 +287,34 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 						esum_g7 += g7.EN;
 					}
 
-#ifdef GAMMA_ET
-					if (esum_g7 > 0)
+					if (hist_group_map_.count("GAMMA_ET"))
 					{
-						if (!nmult)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEgTib0n" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
-						if (nmult == 1)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibn" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
-						if (nmult == 2)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibnn" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
+						if (esum_g7 > 0)
+						{
+							if (!nmult)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTib0n" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
+							if (nmult == 1)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibn" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
+							if (nmult == 2)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibnn" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
+						}
 					}
-#endif
 
-#ifdef GAMMA_GAMMA
-					if (tdiff > 0 && tdiff < 0.5)
+					if (hist_group_map_.count("GAMMA_GAMMA"))
 					{
-						if (!nmult)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEEg0n" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
-						if (nmult == 1)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEEgn" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
-						if (nmult == 2)
-							((TH2F *)vit.fHistArray->FindObject(std::string("hEEgnn" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
+						if (tdiff > 0 && tdiff < 0.5)
+						{
+							if (!nmult)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEEg0n" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
+							if (nmult == 1)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEEgn" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
+							if (nmult == 2)
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEEgnn" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
+						}
 					}
-#endif
 				}
 			}
 		}
-#endif
 	} //end loop through the mergedData TTree
 
 	return kTRUE;
@@ -350,13 +386,13 @@ void AnamergerSelector::Terminate()
 		TNamed parTNamed("par6", parString.c_str());
 		parTNamed.Write(0, 2, 0);
 	}
-	{
-		std::string parString("Beta-implant max. X,Y distance. Double_t DSib= ");
-		parString += std::to_string(DSib);
-		parString += " pixels (square 2*DSib x 2*DSib).";
-		TNamed parTNamed("par7", parString.c_str());
-		parTNamed.Write(0, 2, 0);
-	}
+	//{
+	//	std::string parString("Beta-implant max. X,Y distance. Double_t DSib= ");
+	//	parString += std::to_string(DSib);
+	//	parString += " pixels (square 2*DSib x 2*DSib).";
+	//	TNamed parTNamed("par7", parString.c_str());
+	//	parTNamed.Write(0, 2, 0);
+	//}
 	{
 		std::string parString("Beta energy cut. Double_t Eblow= ");
 		parString += std::to_string(Eblow);
@@ -395,7 +431,7 @@ int AnamergerSelector::loadCUTG(std::string icutname)
 			fcut >> ellipse_b;
 			fcut >> ellipse_x0;
 			fcut >> ellipse_y0;
-			vectorIsotopes.push_back(hIsotope(isoname, ellipse_a, ellipse_b, ellipse_x0, ellipse_y0, GetOutputList()));
+			vectorIsotopes.push_back(hIsotope(isoname, ellipse_a, ellipse_b, ellipse_x0, ellipse_y0, GetOutputList(), hist_group_map_));
 		}
 		fcut.close();
 	}
@@ -419,7 +455,7 @@ int AnamergerSelector::loadCUTG(std::string icutname)
 			{
 				fcut->GetObject(key->GetName(), temp);
 
-				vectorIsotopes.push_back(hIsotope(temp, GetOutputList()));
+				vectorIsotopes.push_back(hIsotope(temp, GetOutputList(), hist_group_map_));
 			}
 		}
 		fcut->Close();

@@ -4,6 +4,8 @@
 #include "TChain.h"
 #include "TProof.h"
 #include "TROOT.h"
+#include "TNamed.h"
+#include "TParameter.h"
 #include "YamlParameter.hpp"
 #include "YamlReader.hpp"
 #include "AnamergerSelector.h"
@@ -89,6 +91,9 @@ int main(int argc, char** argv)
 		/** Number of entries to scan and the first entry to start scanning **/
 		const unsigned long long n_entries = yaml_reader_->GetULong64("NumEntries", false, chain->GetEntries());
 		const unsigned long long first_entry = yaml_reader_->GetULong64("FirstEntry", false, 0);
+		const auto hist_groups = yaml_reader_->GetStringVec("HistogramGroups");
+		const auto correlation_radius = yaml_reader_->GetDouble("CorrelationRadius");
+		const auto gg_tdiff = yaml_reader_->GetDouble("GammaGammaTdiff",false,0.1);
 
 		if (use_proof) {
 			chain->SetProof();
@@ -96,6 +101,13 @@ int main(int argc, char** argv)
 			/** Add parameters to the proof server **/
 			pr->AddInput(new TNamed("output_file_name", output_file_name.c_str()));
 			pr->AddInput(new TNamed("ref_cut_name", ref_cut_name.c_str()));
+			for (const auto name : hist_groups) {
+				if (name == "output_file_name" || name == "ref_cut_name")
+					continue;
+				pr->AddInput(new TNamed(name.c_str(),"True"));
+			}
+			pr->AddInput(new TParameter<Double_t>("correlation_radius",correlation_radius));
+			pr->AddInput(new TParameter<Double_t>("gg_tdiff",correlation_radius));
 			chain->Process("AnamergerSelector", "", n_entries, first_entry);
 		}
 		else {
@@ -103,6 +115,11 @@ int main(int argc, char** argv)
 			AnamergerSelector* selector = new AnamergerSelector(chain);
 			selector->SetOutputFileName(output_file_name);
 			selector->SetReferenceCutName(ref_cut_name);
+			for (const auto name : hist_groups) {
+				selector->SetHistGroup(name);
+			}
+			selector->SetCorrelationRadius(correlation_radius);
+			selector->SetGGTdiff(gg_tdiff);
 			chain->Process(selector, "", n_entries, first_entry);
 		}
 

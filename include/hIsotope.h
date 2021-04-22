@@ -26,6 +26,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <map>
 
 //#define BETA
 //#define DECAYCURVE
@@ -59,9 +60,6 @@ const Double_t Enlow=175;
 const Double_t Enhigh=850;
 const Double_t Eplow=1100;
 
-//Beta-implant max. X,Y distance
-const Double_t DSib=3.5;
- 
 //Beta energy cut
 const Double_t Eblow=0;
    
@@ -70,9 +68,9 @@ class hIsotope
   public:
     hIsotope(){}
     // Constructor with ROOT TCutG
-    hIsotope( TCutG * aCut, TList* outputList );
+    hIsotope( TCutG * aCut, TList* outputList, const std::map<std::string, bool> hist_group_map );
     // Constructor with parameters for ellipse cut.
-    hIsotope( std::string isoname, Double_t a, Double_t b, Double_t x0, Double_t y0, TList* outputList );
+    hIsotope( std::string isoname, Double_t a, Double_t b, Double_t x0, Double_t y0, TList* outputList, const std::map<std::string, bool> hist_group_map );
     ~hIsotope();
     void initializeCut(TCutG* aCut);
     void initializeHistos(TList* outputList);
@@ -93,6 +91,7 @@ class hIsotope
 
     TObjArray *fHistArray;
     std::string isotopeName;
+    std::map<std::string, bool> hist_group_map_;
 };
 
 

@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 #include <string>
 #include <iomanip>
 #include <unistd.h>
@@ -42,10 +43,13 @@ public:
 	virtual TList* GetOutputList() const { return fOutput; }
 	virtual void    SlaveTerminate() { tree_reader_.SetTree((TTree*)nullptr); }
 	virtual void    Terminate();
+	void SetHistGroup(const std::string &group_name) { hist_group_map_[group_name] = true; }
 	void SetReferenceCutName(const std::string &name) { ref_cut_name_ = name; }
 	void SetOutputFileName(const std::string& file_name) {
 		output_file_name_ = file_name;
 	}
+	void SetCorrelationRadius(const double &radius) { correlation_radius_ = radius; }
+	void SetGGTdiff(const double &tdiff) { gg_tdiff_ = tdiff; }
 
 protected:
 	int loadCUTG(std::string icutname);
@@ -66,6 +70,11 @@ protected:
 	TFile* fOutputFile = nullptr;
 	std::string output_file_name_;
 	std::string ref_cut_name_;
+	std::map<std::string, bool> hist_group_map_;
+	// wasabi correlation distance (pixel)
+	double correlation_radius_;
+	// gamma gamma Tib time window (sec)
+	double gg_tdiff_;
 
 	ClassDef(AnamergerSelector, 1)
 };
