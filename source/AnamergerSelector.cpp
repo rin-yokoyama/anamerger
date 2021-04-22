@@ -53,7 +53,7 @@ void AnamergerSelector::SlaveBegin(TTree *mergedData)
 
 	if (fInput)
 	{
-		TNamed *named = (TNamed *)fInput->FindObject("reference_cut_name");
+		TNamed *named = (TNamed *)fInput->FindObject("ref_cut_name");
 		if (named)
 			ref_cut_name_ = named->GetTitle();
 		auto param = (TParameter<Double_t>*)fInput->FindObject("correlation_radius");
@@ -433,7 +433,10 @@ int AnamergerSelector::loadCUTG(std::string icutname)
 			fcut >> ellipse_b;
 			fcut >> ellipse_x0;
 			fcut >> ellipse_y0;
+      if (fcut.eof())
+        break;
 			vectorIsotopes.push_back(hIsotope(isoname, ellipse_a, ellipse_b, ellipse_x0, ellipse_y0, GetOutputList(), hist_group_map_));
+      std::cout << "hIsotope " << isoname << " is created." << std::endl;
 		}
 		fcut.close();
 	}
