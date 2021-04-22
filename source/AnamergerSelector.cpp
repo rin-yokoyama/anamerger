@@ -304,15 +304,12 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 
 					if (hist_group_map_.count("GAMMA_GAMMA"))
 					{
-						if (tdiff > 0 && tdiff < 0.5)
-						{
-							if (!nmult)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEEg0n" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
-							if (nmult == 1)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEEgn" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
-							if (nmult == 2)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEEgnn" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
-						}
+						if (!nmult)
+							((TH2F *)vit.fHistArray->FindObject(std::string("hEEg0n" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
+						if (nmult == 1)
+							((TH2F *)vit.fHistArray->FindObject(std::string("hEEgn" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
+						if (nmult == 2)
+							((TH2F *)vit.fHistArray->FindObject(std::string("hEEgnn" + vit.isotopeName).c_str()))->Fill(esum_d4, esum_g7);
 					}
 				}
 			}
