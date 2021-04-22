@@ -90,6 +90,8 @@ void AnamergerSelector::SlaveBegin(TTree *mergedData)
 		GetOutputList()->Add(hist);
 	}
 
+	loadCUTG(ref_cut_name_);
+
 	if (gProofServ)
 	{
 		const TString msg = TString::Format("SlaveBegin() of Ord = %s called. %d histograms are initialized.",
