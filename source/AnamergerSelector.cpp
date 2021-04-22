@@ -56,13 +56,12 @@ void AnamergerSelector::SlaveBegin(TTree *mergedData)
 		TNamed *named = (TNamed *)fInput->FindObject("ref_cut_name");
 		if (named)
 			ref_cut_name_ = named->GetTitle();
-		auto param = (TParameter<Double_t>*)fInput->FindObject("correlation_radius");
+		auto param = (TParameter<Double_t> *)fInput->FindObject("correlation_radius");
 		if (param)
 			correlation_radius_ = param->GetVal();
-		param = (TParameter<Double_t>*)fInput->FindObject("gg_tdiff");
+		param = (TParameter<Double_t> *)fInput->FindObject("gg_tdiff");
 		if (param)
 			gg_tdiff_ = param->GetVal();
-
 
 		TIter next(fInput);
 		while (auto *obj = (TObject *)next())
@@ -81,6 +80,13 @@ void AnamergerSelector::SlaveBegin(TTree *mergedData)
 	if (hist_group_map_.count("TEST"))
 	{
 		fHistArray->Add(new TH1F("betaEx", "betaEx", 1000, 0, 1000));
+	}
+	if (hist_group_map_.count("PID"))
+	{
+		fHistArray->Add(new TH2F("pid_layer0", "pid_layer0", 1000, 2, 3, 1000, 50, 80));
+		fHistArray->Add(new TH2F("pid_layer1", "pid_layer1", 1000, 2, 3, 1000, 50, 80));
+		fHistArray->Add(new TH2F("pid_layer2", "pid_layer2", 1000, 2, 3, 1000, 50, 80));
+		fHistArray->Add(new TH2F("pid_layer3", "pid_layer3", 1000, 2, 3, 1000, 50, 80));
 	}
 
 	//adding histograms to output list
@@ -124,6 +130,18 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 	// Implant events
 	if (!(*implant).vectorOfPid.empty())
 	{
+		if (hist_group_map_.count("PID"))
+		{
+			if ((*implant).z == 0)
+				((TH2F *)fHistArray->FindObject("pid_layer0"))->Fill((*implant).aoq, (*implant).zet);
+			else if ((*implant).z == 1)
+				((TH2F *)fHistArray->FindObject("pid_layer1"))->Fill((*implant).aoq, (*implant).zet);
+			else if ((*implant).z == 2)
+				((TH2F *)fHistArray->FindObject("pid_layer2"))->Fill((*implant).aoq, (*implant).zet);
+			else if ((*implant).z == 3)
+				((TH2F *)fHistArray->FindObject("pid_layer3"))->Fill((*implant).aoq, (*implant).zet);
+		}
+
 		Int_t i = 0;
 		for (const auto &vit : vectorIsotopes)
 		{
@@ -430,10 +448,10 @@ int AnamergerSelector::loadCUTG(std::string icutname)
 			fcut >> ellipse_b;
 			fcut >> ellipse_x0;
 			fcut >> ellipse_y0;
-      if (fcut.eof())
-        break;
+			if (fcut.eof())
+				break;
 			vectorIsotopes.push_back(hIsotope(isoname, ellipse_a, ellipse_b, ellipse_x0, ellipse_y0, GetOutputList(), hist_group_map_));
-      std::cout << "hIsotope " << isoname << " is created." << std::endl;
+			std::cout << "hIsotope " << isoname << " is created." << std::endl;
 		}
 		fcut.close();
 	}
