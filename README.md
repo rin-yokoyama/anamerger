@@ -63,6 +63,10 @@ module use -a "path-to-install/share/modulefiles"
 module load anamerger
 ```
 to setup environment.
+Or you can simply source the setup.sh
+```
+source install/share/setup.sh
+```
 
 anamerger usage:
 ```
@@ -77,3 +81,10 @@ anamerger_main -o [output_rootfile] -c [config yaml file]
 * UseProof: If True, run on a proof lite server. Otherwise, run in a single thread.
 * NumWorkers: Number of parallel workers. Available if UseProof is True.
 * PrintFrequency: Defines how often the program to print the progress.
+* HistogramGroups: A list of histogram group names.
+* - PID: Particle identification plots gated by implant layers
+* - ISOMER: Isomer gamma spectra
+* - BETA: histograms related to beta events
+* - DECAYCURVE: decay curves (requires BETA)
+* - GAMMA_ET: Egamma vs Tbeta-Timp histograms (requires BETA)
+* - GAMMA_GAMMA: gamma-gamma (requires BETA)
