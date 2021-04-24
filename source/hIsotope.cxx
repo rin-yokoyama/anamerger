@@ -71,23 +71,25 @@ void hIsotope::initializeHistos(TList *outputList)
   }
 
   fHistArray = new TObjArray();
-  // initialize histograms
 
+  /// Histogram definitions
   if (hist_group_map_.count("ISOMER"))
   {
     {
+      /// E_gamma vs (T_gamma - T_implant)
       std::string histName = "hETgI" + isotopeName;
       TH2F *h = new TH2F(histName.c_str(), "ET plot for isomers", 4000, 0, 4000, 2000, -100E-6, 100E-6);
       h->SetXTitle("Gamma-ray energy (keV)");
       h->SetYTitle("Tgamma - Timplant (s)");
-      fHistArray->Add(h); //ET histograms
+      fHistArray->Add(h);
     }
     {
+      /// E_gamma vs E_gamma
       std::string histName = "hEEgI" + isotopeName;
       TH2F *h = new TH2F(histName.c_str(), "gamma-gamma plot for isomer (1 - 5 us)", 4000, 0, 4000, 4000, 0, 4000);
       h->SetXTitle("D4 energy");
       h->SetYTitle("G7 energy");
-      fHistArray->Add(h); //Tib histograms
+      fHistArray->Add(h);
     }
   }
 
@@ -96,53 +98,58 @@ void hIsotope::initializeHistos(TList *outputList)
     if (hist_group_map_.count("DECAYCURVE"))
     {
       {
+        /// Total decay curve
         std::string histName = "hTib" + isotopeName;
-        fHistArray->Add(new TH1F(histName.c_str(), "", 20000, -10, 10)); //Tib histograms
+        fHistArray->Add(new TH1F(histName.c_str(), "decay curve (total)", 20000, -10, 10));
       }
       {
+        /// 0n decay curve
         std::string histName = "hTib0n" + isotopeName;
-        fHistArray->Add(new TH1F(histName.c_str(), "", 20000, -10, 10)); //Tib histograms
+        fHistArray->Add(new TH1F(histName.c_str(), "decay curve (0n)", 20000, -10, 10));
       }
       {
+        /// 1n decay curve
         std::string histName = "hTibn" + isotopeName;
-        fHistArray->Add(new TH1F(histName.c_str(), "", 20000, -10, 10)); //Tib histograms
+        fHistArray->Add(new TH1F(histName.c_str(), "decay curve (1n)", 20000, -10, 10));
       }
       {
+        /// 2n decay curve
         std::string histName = "hTibnn" + isotopeName;
-        fHistArray->Add(new TH1F(histName.c_str(), "", 20000, -10, 10)); //Tib histograms
+        fHistArray->Add(new TH1F(histName.c_str(), "decay curve (2n)", 20000, -10, 10));
       }
       {
+        /// 3n decay curve
         std::string histName = "hTib3n" + isotopeName;
-        fHistArray->Add(new TH1F(histName.c_str(), "", 20000, -10, 10)); //Tib histograms
+        fHistArray->Add(new TH1F(histName.c_str(), "decay curve (3n)", 20000, -10, 10));
       }
     }
     if (hist_group_map_.count("GAMMA_ET"))
     {
-      // Tbeta - Timp vs gamma E
+      // E_gamma vs (T_beta - T_implant)
       {
         std::string histName = "hEgTib0n" + isotopeName;
-        fHistArray->Add(new TH2F(histName.c_str(), "", 4000, 0, 4000, 2000, -10, 10)); //ET histograms
+        fHistArray->Add(new TH2F(histName.c_str(), "Egamma vs Tbeta-Timp (0n)", 4000, 0, 4000, 2000, -10, 10));
       }
       {
         std::string histName = "hEgTibn" + isotopeName;
-        fHistArray->Add(new TH2F(histName.c_str(), "", 4000, 0, 4000, 2000, -10, 10)); //ET histograms
+        fHistArray->Add(new TH2F(histName.c_str(), "Egamma vs Tbeta-Timp (1n)", 4000, 0, 4000, 2000, -10, 10));
       }
       {
         std::string histName = "hEgTibnn" + isotopeName;
-        fHistArray->Add(new TH2F(histName.c_str(), "", 4000, 0, 4000, 2000, -10, 10)); //ET histograms
+        fHistArray->Add(new TH2F(histName.c_str(), "Egamma vs Tbeta-Timp (2n)", 4000, 0, 4000, 2000, -10, 10));
       }
-      // Tgamma - Tbeta vs gamma E
+      // E_gamma_addback vs (T_beta - T_implant)
       {
-        std::string histName = "hEgTbg0n" + isotopeName;
-        fHistArray->Add(new TH2F(histName.c_str(), "", 4000, 0, 4000, 2000, -10000, 10000)); //ET histograms
-      }
-      {
-        std::string histName = "hEgTbgn" + isotopeName;
-        fHistArray->Add(new TH2F(histName.c_str(), "", 4000, 0, 4000, 2000, -10000, 10000)); //ET histograms
+        std::string histName = "hEgaTib0n" + isotopeName;
+        fHistArray->Add(new TH2F(histName.c_str(), "Egamma addback vs Tbeta-Timp (0n)", 4000, 0, 4000, 2000, -10, 10));
       }
       {
-        std::string histName = "hEgTbgnn" + isotopeName;
-        fHistArray->Add(new TH2F(histName.c_str(), "", 4000, 0, 4000, 2000, -10000, 10000)); //ET histograms
+        std::string histName = "hEgaTbgn" + isotopeName;
+        fHistArray->Add(new TH2F(histName.c_str(), "Egamma addback vs Tbeta-Timp (1n)", 4000, 0, 4000, 2000, -10, 10));
+      }
+      {
+        std::string histName = "hEgaTbgnn" + isotopeName;
+        fHistArray->Add(new TH2F(histName.c_str(), "Egamma addback vs Tbeta-Timp (2n)", 4000, 0, 4000, 2000, -10, 10));
       }
     }
     if (hist_group_map_.count("GAMMA_GAMMA"))
@@ -150,24 +157,24 @@ void hIsotope::initializeHistos(TList *outputList)
       // gamma-gamma
       {
         std::string histName = "hEEg0n" + isotopeName;
-        TH2F *h = new TH2F(histName.c_str(), "", 4000, 0, 4000, 4000, 0, 4000);
+        TH2F *h = new TH2F(histName.c_str(), "Gamma-gamma (0n)", 4000, 0, 4000, 4000, 0, 4000);
         h->SetXTitle("D4 energy");
         h->SetYTitle("G7 energy");
-        fHistArray->Add(h); //Tib histograms
+        fHistArray->Add(h); 
       }
       {
         std::string histName = "hEEgn" + isotopeName;
-        TH2F *h = new TH2F(histName.c_str(), "", 4000, 0, 4000, 4000, 0, 4000);
+        TH2F *h = new TH2F(histName.c_str(), "Gamma-gamma (1n)", 4000, 0, 4000, 4000, 0, 4000);
         h->SetXTitle("D4 energy");
         h->SetYTitle("G7 energy");
-        fHistArray->Add(h); //Tib histograms
+        fHistArray->Add(h);
       }
       {
         std::string histName = "hEEgnn" + isotopeName;
-        TH2F *h = new TH2F(histName.c_str(), "", 4000, 0, 4000, 4000, 0, 4000);
+        TH2F *h = new TH2F(histName.c_str(), "Gamma-gamma (2n)", 4000, 0, 4000, 4000, 0, 4000);
         h->SetXTitle("D4 energy");
         h->SetYTitle("G7 energy");
-        fHistArray->Add(h); //Tib histograms
+        fHistArray->Add(h);
       }
     }
   }

@@ -51,7 +51,7 @@ void AnamergerSelector::SlaveBegin(TTree *mergedData)
 	}
 	fHistArray = new TObjArray();
 
-	if (fInput)
+	if (fInput) /// initialization with PROOF
 	{
 		TNamed *named = (TNamed *)fInput->FindObject("ref_cut_name");
 		if (named)
@@ -76,17 +76,20 @@ void AnamergerSelector::SlaveBegin(TTree *mergedData)
 		}
 	}
 
+	/// Histogram definitions
 	fHistArray->Add(new TH1F("countPID", "countPID", 100, 0, 100));
 	if (hist_group_map_.count("TEST"))
 	{
+		/// Test histograms
 		fHistArray->Add(new TH1F("betaEx", "betaEx", 1000, 0, 1000));
 	}
 	if (hist_group_map_.count("PID"))
 	{
-		fHistArray->Add(new TH2F("pid_layer0", "pid_layer0", 1000, 2, 3, 1000, 50, 80));
-		fHistArray->Add(new TH2F("pid_layer1", "pid_layer1", 1000, 2, 3, 1000, 50, 80));
-		fHistArray->Add(new TH2F("pid_layer2", "pid_layer2", 1000, 2, 3, 1000, 50, 80));
-		fHistArray->Add(new TH2F("pid_layer3", "pid_layer3", 1000, 2, 3, 1000, 50, 80));
+		/// PID plots gated by implant depth
+		fHistArray->Add(new TH2F("pid_layer0", "pid_layer0", 500, 2.5, 3, 500, 45, 65));
+		fHistArray->Add(new TH2F("pid_layer1", "pid_layer1", 500, 2.5, 3, 500, 45, 65));
+		fHistArray->Add(new TH2F("pid_layer2", "pid_layer2", 500, 2.5, 3, 500, 45, 65));
+		fHistArray->Add(new TH2F("pid_layer3", "pid_layer3", 500, 2.5, 3, 500, 45, 65));
 	}
 
 	//adding histograms to output list
@@ -96,15 +99,17 @@ void AnamergerSelector::SlaveBegin(TTree *mergedData)
 		GetOutputList()->Add(hist);
 	}
 
+	// create isotope cuts
 	loadCUTG(ref_cut_name_);
 
-	if (gProofServ)
+	if (gProofServ) // with PROOF
 	{
+		// sends message to the client session
 		const TString msg = TString::Format("SlaveBegin() of Ord = %s called. %d histograms are initialized.",
 											gProofServ->GetOrdinal(), GetOutputList()->GetEntries());
 		gProofServ->SendAsynMessage(msg);
 	}
-	else
+	else // without PROOF
 	{
 		std::cout << "SalveBegin() called. " << GetOutputList()->GetEntries() << " histograms are initialized." << std::endl;
 	}
@@ -120,6 +125,8 @@ void AnamergerSelector::Init(TTree *mergedData)
 
 Bool_t AnamergerSelector::Process(Long64_t entry)
 {
+	// main analysis loop
+	
 	tree_reader_.SetLocalEntry(entry);
 
 	// test
@@ -130,34 +137,37 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 	// Implant events
 	if (!(*implant).vectorOfPid.empty())
 	{
-		if (hist_group_map_.count("PID"))
+    const double aoq = (*implant).vectorOfPid.at(0).AOQ;
+    const double zet = (*implant).vectorOfPid.at(0).ZET;
+    if (hist_group_map_.count("PID"))
 		{
-			if ((*implant).z == 0)
-				((TH2F *)fHistArray->FindObject("pid_layer0"))->Fill((*implant).aoq, (*implant).zet);
-			else if ((*implant).z == 1)
-				((TH2F *)fHistArray->FindObject("pid_layer1"))->Fill((*implant).aoq, (*implant).zet);
-			else if ((*implant).z == 2)
-				((TH2F *)fHistArray->FindObject("pid_layer2"))->Fill((*implant).aoq, (*implant).zet);
-			else if ((*implant).z == 3)
-				((TH2F *)fHistArray->FindObject("pid_layer3"))->Fill((*implant).aoq, (*implant).zet);
+			if ((*implant).z == 11)
+				((TH2F *)fHistArray->FindObject("pid_layer0"))->Fill(aoq, zet);
+			else if ((*implant).z == 12)
+				((TH2F *)fHistArray->FindObject("pid_layer1"))->Fill(aoq, zet);
+			else if ((*implant).z == 13)
+				((TH2F *)fHistArray->FindObject("pid_layer2"))->Fill(aoq, zet);
+			else if ((*implant).z == 14)
+				((TH2F *)fHistArray->FindObject("pid_layer3"))->Fill(aoq, zet);
 		}
 
 		Int_t i = 0;
 		for (const auto &vit : vectorIsotopes)
 		{
 			i++;
-			if (vit.IsInside((*implant).aoq, (*implant).zet))
+			if (vit.IsInside(aoq, zet))
 			{
 				break;
 			}
 		}
 		((TH1F *)fHistArray->FindObject("countPID"))->Fill(i);
 
+		// fills isomer gammas
 		if (hist_group_map_.count("ISOMER"))
 		{
 			for (auto vit : vectorIsotopes)
 			{
-				if (vit.IsInside((*implant).aoq, (*implant).zet))
+				if (vit.IsInside(aoq, zet))
 				{
 					std::vector<GammaData> d4_vec;
 					std::vector<GammaData> g7_vec;
@@ -189,6 +199,7 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 		}
 	}
 
+	// beta analysis
 	if (hist_group_map_.count("BETA"))
 	{
 		//if ((*beta).z > 3) // WAS3ABi
@@ -215,11 +226,13 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 			//	continue;
 			if ((*beta).z != imp.Z)
 				continue;
-			{
-				const Double_t pdist = correlation_radius_ * correlation_radius_; // WAS3ABi
-				if (TMath::Power((*beta).x - imp.X, 2) + TMath::Power((*beta).y - imp.Y, 2) > pdist)
-					continue;
-			}
+			//{
+			//	const Double_t pdist = correlation_radius_ * correlation_radius_; // WAS3ABi
+			//	if (TMath::Power((*beta).x - imp.X, 2) + TMath::Power((*beta).y - imp.Y, 2) > pdist)
+			//		continue;
+			//}
+
+			// counts neutron multiplicity
 			Int_t nmult = 0;
 			for (const auto &neu : (*beta).vectorOfNeu)
 			{
@@ -227,11 +240,12 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 				if (DTbnlow < tdiff && tdiff < DTbnhigh && neu.EN > Enlow && neu.EN < Enhigh)
 					nmult++;
 			}
+
 			for (const auto &vit : vectorIsotopes)
 			{
 				if (vit.IsInside(imp.AOQ, imp.ZET))
 				{
-
+					/// tdiff: T_beta - T_implant in second
 					const Double_t tdiff = ((*beta).T - imp.TIME) * 1.E-9;
 
 					if (hist_group_map_.count("DECAYCURVE"))
@@ -253,20 +267,21 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 					std::vector<GammaData> g7gg_vec;
 					for (auto gm : (*beta).vectorOfGamma)
 					{
+						/// bg_tdiff: Tbeta - Tgamma
 						const Double_t bg_tdiff = ((*beta).T - gm.TIME);
+						//if (bg_tdiff < 2000. || bg_tdiff > 5000.)
+						//	continue;
 
 						if (hist_group_map_.count("GAMMA_ET"))
 						{
 							if (!nmult)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTbg0n" + vit.isotopeName).c_str()))->Fill(gm.EN, bg_tdiff);
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTib0n" + vit.isotopeName).c_str()))->Fill(gm.EN, tdiff);
 							if (nmult == 1)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTbgn" + vit.isotopeName).c_str()))->Fill(gm.EN, bg_tdiff);
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibn" + vit.isotopeName).c_str()))->Fill(gm.EN, tdiff);
 							if (nmult == 2)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTbgnn" + vit.isotopeName).c_str()))->Fill(gm.EN, bg_tdiff);
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibnn" + vit.isotopeName).c_str()))->Fill(gm.EN, tdiff);
 						}
 
-						//if (bg_tdiff < 2000. || bg_tdiff > 5000.)
-						//	continue;
 						if (gm.INDEX1 == 1)
 							d4_vec.push_back(gm);
 						if (gm.INDEX1 == 2)
@@ -293,11 +308,11 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 						if (esum_d4 > 0)
 						{
 							if (!nmult)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTib0n" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgaTib0n" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
 							if (nmult == 1)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibn" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgaTibn" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
 							if (nmult == 2)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibnn" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgaTibnn" + vit.isotopeName).c_str()))->Fill(esum_d4, tdiff);
 						}
 					}
 
@@ -312,11 +327,11 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 						if (esum_g7 > 0)
 						{
 							if (!nmult)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTib0n" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgaTib0n" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
 							if (nmult == 1)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibn" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgaTibn" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
 							if (nmult == 2)
-								((TH2F *)vit.fHistArray->FindObject(std::string("hEgTibnn" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
+								((TH2F *)vit.fHistArray->FindObject(std::string("hEgaTibnn" + vit.isotopeName).c_str()))->Fill(esum_g7, tdiff);
 						}
 					}
 
