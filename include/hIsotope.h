@@ -55,7 +55,7 @@ const Double_t Enhigh=1000;
 const Double_t Eplow=1100;
 
 //Beta energy cut
-const Double_t Eblow=0;
+const Double_t Eblow=100;
    
 /**
  * @brief hIsotope manages all the histograms related to an isotope
