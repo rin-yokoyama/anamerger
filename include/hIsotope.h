@@ -42,8 +42,8 @@ const Long_t DTgbhigh=2e4;
 const Long_t DTibhigh=5e9;
 
 //Beta-F11 time cut window (DT=100us)
-const Long_t DTfblow=-30000;
-const Long_t DTfbhigh=70000;
+const Long_t DTfblow=5000;
+const Long_t DTfbhigh=150000;
 
 //Neutron-F11 time cut window (DT=250us)
 const Long_t DTfnlow=-50e3;

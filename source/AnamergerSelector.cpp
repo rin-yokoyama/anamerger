@@ -137,8 +137,8 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 	// Implant events
 	if (!(*implant).vectorOfPid.empty())
 	{
-    const double aoq = (*implant).vectorOfPid.at(0).AOQ;
-    const double zet = (*implant).vectorOfPid.at(0).ZET;
+    const double aoq = (*implant).aoq;
+    const double zet = (*implant).zet;
     if (hist_group_map_.count("PID"))
 		{
 			if ((*implant).z == 11)
@@ -157,6 +157,7 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 			i++;
 			if (vit.IsInside(aoq, zet))
 			{
+				((TH2F *)vit.fHistArray->FindObject(std::string("hPID" + vit.isotopeName).c_str()))->Fill(aoq,zet);
 				break;
 			}
 		}
@@ -211,20 +212,31 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 		//	if (tdiff > 0 && tdiff < 50.E-6)
 		//		return kTRUE;
 		//}
+		if ((*beta).T < 1)
+			return kTRUE;
+
+		if (!((*beta).z == 12 || (*beta).z == 13))
+			return kTRUE;
+
+		{
+			/// Veto by F11 Plastic L
+			bool veto = false;
+			for (const auto &anc : (*beta).vectorOfAnc){
+				if (anc.ID == 150){
+					const Double_t tdiff_f11l = (*beta).T - anc.TIME;
+					if (tdiff_f11l > DTfblow && tdiff_f11l < DTfbhigh)
+						veto = true;
+				}
+			}
+			if (veto)
+				return kTRUE;
+		}
 
 		for (const auto &imp : (*beta).vectorOfImp)
 		{
-			//if (imp.Z > 3) // WAS3ABi
-			//	continue;
-			//bool yso = false;
-			//for (const auto &imp2 : (*beta).vectorOfImp)
-			//{
-			//	const Double_t tdiff = (imp.TIME - imp2.TIME) * 1.E-9;
-			//	if (imp2.Z > 3 && tdiff > -10E-6 && tdiff < 10E-6)
-			//		yso = true;
-			//}
-			//	continue;
 			if ((*beta).z != imp.Z)
+				continue;
+			if (imp.TIME < 1)
 				continue;
 			//{
 			//	const Double_t pdist = correlation_radius_ * correlation_radius_; // WAS3ABi
