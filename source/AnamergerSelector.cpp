@@ -235,13 +235,6 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 				return kTRUE;
 		}
 
-		for (const auto &imp : (*beta).vectorOfImp)
-		{
-		if ((*beta).T < 1)
-			return kTRUE;
-
-		if (!((*beta).z == 12 || (*beta).z == 13))
-			return kTRUE;
 
 		{
 			/// Veto by F11 Plastic L
