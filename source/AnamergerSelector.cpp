@@ -215,6 +215,31 @@ Bool_t AnamergerSelector::Process(Long64_t entry)
 		if ((*beta).T < 1)
 			return kTRUE;
 
+		if ((*beta).E < Eblow)
+			return kTRUE;
+
+		if (!((*beta).z == 12 || (*beta).z == 13))
+			return kTRUE;
+
+		{
+			/// Veto by F11 Plastic L
+			bool veto = false;
+			for (const auto &anc : (*beta).vectorOfAnc){
+				if (anc.ID == 150){
+					const Double_t tdiff_f11l = (*beta).T - anc.TIME;
+					if (tdiff_f11l > DTfblow && tdiff_f11l < DTfbhigh)
+						veto = true;
+				}
+			}
+			if (veto)
+				return kTRUE;
+		}
+
+		for (const auto &imp : (*beta).vectorOfImp)
+		{
+		if ((*beta).T < 1)
+			return kTRUE;
+
 		if (!((*beta).z == 12 || (*beta).z == 13))
 			return kTRUE;
 
